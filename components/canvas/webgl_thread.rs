@@ -10,7 +10,6 @@ use gleam::gl;
 use offscreen_gl_context::{GLContext, GLContextAttributes, GLLimits, NativeGLContextMethods};
 use std::thread;
 use super::gl_context::{GLContextFactory, GLContextWrapper};
-use webrender;
 use webrender_api;
 
 /// WebGL Threading API entry point that lives in the constellation.
@@ -155,7 +154,7 @@ impl<VR: WebVRRenderHandler + 'static, OB: WebGLThreadObserver> WebGLThread<VR, 
         self.webvr_compositor.as_mut().unwrap().handle(command, texture.map(|t| (t.texture_id, t.size)));
     }
 
-    /// Handles a lock external callback received from webrender::ExternalImageHandler
+    /// Handles a lock external callback received from webrender_api::ExternalImageHandler
     fn handle_lock(&mut self, context_id: WebGLContextId, sender: WebGLSender<(u32, Size2D<i32>, usize)>) {
         let ctx = Self::make_current_if_needed(context_id, &self.contexts, &mut self.bound_context_id)
                         .expect("WebGLContext not found in a WebGLMsg::Lock message");
@@ -171,7 +170,7 @@ impl<VR: WebVRRenderHandler + 'static, OB: WebGLThreadObserver> WebGLThread<VR, 
         sender.send((info.texture_id, info.size, gl_sync as usize)).unwrap();
     }
 
-    /// Handles an unlock external callback received from webrender::ExternalImageHandler
+    /// Handles an unlock external callback received from webrender_api::ExternalImageHandler
     fn handle_unlock(&mut self, context_id: WebGLContextId) {
         let ctx = Self::make_current_if_needed(context_id, &self.contexts, &mut self.bound_context_id)
                         .expect("WebGLContext not found in a WebGLMsg::Unlock message");
@@ -571,7 +570,7 @@ struct WebGLContextInfo {
 }
 
 /// Trait used to observe events in a WebGL Thread.
-/// Used in webrender::ExternalImageHandler when multiple WebGL threads are used.
+/// Used in webrender_api::ExternalImageHandler when multiple WebGL threads are used.
 pub trait WebGLThreadObserver: Send + 'static {
     fn on_context_create(&mut self, ctx_id: WebGLContextId, texture_id: u32, size: Size2D<i32>);
     fn on_context_resize(&mut self, ctx_id: WebGLContextId, texture_id: u32, size: Size2D<i32>);
@@ -602,21 +601,21 @@ impl<T: WebGLExternalImageApi> WebGLExternalImageHandler<T> {
     }
 }
 
-impl<T: WebGLExternalImageApi> webrender::ExternalImageHandler for WebGLExternalImageHandler<T> {
+impl<T: WebGLExternalImageApi> webrender_api::ExternalImageHandler for WebGLExternalImageHandler<T> {
     /// Lock the external image. Then, WR could start to read the image content.
     /// The WR client should not change the image content until the unlock() call.
     fn lock(&mut self,
             key: webrender_api::ExternalImageId,
-            _channel_index: u8) -> webrender::ExternalImage {
+            _channel_index: u8) -> webrender_api::ExternalImage {
         let ctx_id = WebGLContextId(key.0 as _);
         let (texture_id, size) = self.handler.lock(ctx_id);
 
-        webrender::ExternalImage {
+        webrender_api::ExternalImage {
             u0: 0.0,
             u1: size.width as f32,
             v1: 0.0,
             v0: size.height as f32,
-            source: webrender::ExternalImageSource::NativeTexture(texture_id),
+            source: webrender_api::ExternalImageSource::NativeTexture(texture_id),
         }
 
     }

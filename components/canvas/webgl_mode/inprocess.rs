@@ -14,7 +14,6 @@ use gleam::gl;
 use servo_config::prefs::PREFS;
 use std::marker::PhantomData;
 use std::rc::Rc;
-use webrender;
 use webrender_api;
 
 /// WebGL Threading API entry point that lives in the constellation.
@@ -26,7 +25,7 @@ impl WebGLThreads {
                webrender_gl: Rc<gl::Gl>,
                webrender_api_sender: webrender_api::RenderApiSender,
                webvr_compositor: Option<Box<WebVRRenderHandler>>)
-               -> (WebGLThreads, Box<webrender::ExternalImageHandler>, Option<Box<webrender::OutputImageHandler>>) {
+               -> (WebGLThreads, Box<webrender_api::ExternalImageHandler>, Option<Box<webrender_api::OutputImageHandler>>) {
         // This implementation creates a single `WebGLThread` for all the pipelines.
         let channel = WebGLThread::start(gl_factory,
                                          webrender_api_sender,
@@ -53,7 +52,7 @@ impl WebGLThreads {
     }
 }
 
-/// Bridge between the webrender::ExternalImage callbacks and the WebGLThreads.
+/// Bridge between the webrender_api::ExternalImage callbacks and the WebGLThreads.
 struct WebGLExternalImages {
     webrender_gl: Rc<gl::Gl>,
     webgl_channel: WebGLSender<WebGLMsg>,
@@ -114,7 +113,7 @@ impl WebVRRenderHandler for WebVRRenderWrapper {
     }
 }
 
-/// struct used to implement DOMToTexture feature and webrender::OutputImageHandler trait.
+/// struct used to implement DOMToTexture feature and webrender_api::OutputImageHandler trait.
 type OutputHandlerData = Option<(u32, Size2D<i32>)>;
 struct OutputHandler {
     webrender_gl: Rc<gl::Gl>,
@@ -136,7 +135,7 @@ impl OutputHandler {
 }
 
 /// Bridge between the WR frame outputs and WebGL to implement DOMToTexture synchronization.
-impl webrender::OutputImageHandler for OutputHandler {
+impl webrender_api::OutputImageHandler for OutputHandler {
     fn lock(&mut self, id: webrender_api::PipelineId) -> Option<(u32, webrender_api::DeviceIntSize)> {
         // Insert a fence in the WR command queue
         let gl_sync = self.webrender_gl.fence_sync(gl::SYNC_GPU_COMMANDS_COMPLETE, 0);
