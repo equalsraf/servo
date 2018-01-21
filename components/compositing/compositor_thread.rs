@@ -19,7 +19,6 @@ use std::fmt::{Debug, Error, Formatter};
 use std::sync::mpsc::{Receiver, Sender};
 use style_traits::cursor::CursorKind;
 use style_traits::viewport::ViewportConstraints;
-use webrender;
 use webrender_api;
 
 
@@ -242,7 +241,7 @@ impl Debug for EmbedderMsg {
 }
 
 /// Data used to construct a compositor.
-pub struct InitialCompositorState {
+pub struct InitialCompositorState<T: webrender_api::Renderer> {
     /// A channel to the compositor.
     pub sender: CompositorProxy,
     /// A port on which messages inbound to the compositor can be received.
@@ -254,7 +253,7 @@ pub struct InitialCompositorState {
     /// A channel to the memory profiler thread.
     pub mem_profiler_chan: mem::ProfilerChan,
     /// Instance of webrender API
-    pub webrender: webrender::Renderer,
+    pub webrender: T,
     pub webrender_document: webrender_api::DocumentId,
     pub webrender_api: webrender_api::RenderApi,
 }

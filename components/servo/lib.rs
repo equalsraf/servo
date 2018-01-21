@@ -121,14 +121,14 @@ pub use msg::constellation_msg::TopLevelBrowsingContextId as BrowserId;
 /// application Servo is embedded in. Clients then create an event
 /// loop to pump messages between the embedding application and
 /// various browser components.
-pub struct Servo<Window: WindowMethods + 'static> {
-    compositor: IOCompositor<Window>,
+pub struct Servo<Window: WindowMethods + 'static, R: webrender_api::Renderer> {
+    compositor: IOCompositor<Window, R>,
     constellation_chan: Sender<ConstellationMsg>,
     embedder_receiver: EmbedderReceiver
 }
 
-impl<Window> Servo<Window> where Window: WindowMethods + 'static {
-    pub fn new(window: Rc<Window>) -> Servo<Window> {
+impl<Window> Servo<Window, webrender::Renderer> where Window: WindowMethods + 'static {
+    pub fn new(window: Rc<Window>) -> Servo<Window, webrender::Renderer> {
         // Global configuration options, parsed from the command line.
         let opts = opts::get();
 
@@ -182,8 +182,8 @@ impl<Window> Servo<Window> where Window: WindowMethods + 'static {
                 None
             };
 
-            let mut debug_flags = webrender::DebugFlags::empty();
-            debug_flags.set(webrender::DebugFlags::PROFILER_DBG, opts.webrender_stats);
+            let mut debug_flags = webrender_api::DebugFlags::empty();
+            debug_flags.set(webrender_api::DebugFlags::PROFILER_DBG, opts.webrender_stats);
 
             let render_notifier = Box::new(RenderNotifier::new(compositor_proxy.clone()));
 
@@ -536,7 +536,7 @@ fn create_constellation(user_agent: Cow<'static, str>,
                         debugger_chan: Option<debugger::Sender>,
                         devtools_chan: Option<Sender<devtools_traits::DevtoolsControlMsg>>,
                         supports_clipboard: bool,
-                        webrender: &mut webrender::Renderer,
+                        webrender: &mut webrender_api::Renderer,
                         webrender_document: webrender_api::DocumentId,
                         webrender_api_sender: webrender_api::RenderApiSender,
                         window_gl: Rc<gl::Gl>)

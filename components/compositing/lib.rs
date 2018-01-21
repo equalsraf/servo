@@ -22,7 +22,6 @@ extern crate servo_geometry;
 extern crate servo_url;
 extern crate style_traits;
 extern crate time;
-extern crate webrender;
 extern crate webrender_api;
 
 pub use compositor_thread::CompositorProxy;

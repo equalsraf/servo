@@ -29,6 +29,7 @@ extern crate servo;
 #[cfg(all(feature = "unstable", not(target_os = "android")))]
 #[macro_use]
 extern crate sig;
+extern crate webrender;
 
 use backtrace::Backtrace;
 use servo::Servo;
@@ -201,7 +202,7 @@ fn unregister_glutin_resize_handler(window: &Rc<app::window::Window>) {
 }
 
 struct ServoWrapper {
-    servo: Servo<app::window::Window>,
+    servo: Servo<app::window::Window, webrender::Renderer>,
 }
 
 impl app::NestedEventLoopListener for ServoWrapper {

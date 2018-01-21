@@ -33,9 +33,9 @@ use style_traits::cursor::CursorKind;
 use style_traits::viewport::ViewportConstraints;
 use time::{precise_time_ns, precise_time_s};
 use touch::{TouchHandler, TouchAction};
-use webrender;
 use webrender_api::{self, DeviceUintRect, DeviceUintSize, HitTestFlags, HitTestResult};
 use webrender_api::{LayoutVector2D, ScrollEventPhase, ScrollLocation};
+use webrender_api::{DebugFlags};
 use windowing::{self, MouseWindowEvent, WebRenderDebugOption, WindowMethods};
 
 #[derive(Debug, PartialEq)]
@@ -94,7 +94,7 @@ impl FrameTreeId {
 enum LayerPixel {}
 
 /// NB: Never block on the constellation, because sometimes the constellation blocks on us.
-pub struct IOCompositor<Window: WindowMethods> {
+pub struct IOCompositor<Window: WindowMethods, R: webrender_api::Renderer> {
     /// The application window.
     pub window: Rc<Window>,
 
@@ -176,7 +176,7 @@ pub struct IOCompositor<Window: WindowMethods> {
     in_scroll_transaction: Option<Instant>,
 
     /// The webrender renderer.
-    webrender: webrender::Renderer,
+    webrender: R,
 
     /// The active webrender document.
     webrender_document: webrender_api::DocumentId,
@@ -347,9 +347,9 @@ impl webrender_api::RenderNotifier for RenderNotifier {
     }
 }
 
-impl<Window: WindowMethods> IOCompositor<Window> {
-    fn new(window: Rc<Window>, state: InitialCompositorState)
-           -> IOCompositor<Window> {
+impl<Window: WindowMethods, R: webrender_api::Renderer> IOCompositor<Window, R> {
+    fn new(window: Rc<Window>, state: InitialCompositorState<R>)
+           -> IOCompositor<Window, R> {
         let frame_size = window.framebuffer_size();
         let window_rect = window.window_rect();
         let scale_factor = window.hidpi_factor();
@@ -394,7 +394,7 @@ impl<Window: WindowMethods> IOCompositor<Window> {
         }
     }
 
-    pub fn create(window: Rc<Window>, state: InitialCompositorState) -> IOCompositor<Window> {
+    pub fn create(window: Rc<Window>, state: InitialCompositorState<R>) -> IOCompositor<Window, R> {
         let mut compositor = IOCompositor::new(window, state);
 
         // Set the size of the root layer.
@@ -1535,15 +1535,15 @@ impl<Window: WindowMethods> IOCompositor<Window> {
         let mut flags = self.webrender.get_debug_flags();
         let flag = match option {
             WebRenderDebugOption::Profiler => {
-                webrender::DebugFlags::PROFILER_DBG |
-                webrender::DebugFlags::GPU_TIME_QUERIES |
-                webrender::DebugFlags::GPU_SAMPLE_QUERIES
+                DebugFlags::PROFILER_DBG |
+                DebugFlags::GPU_TIME_QUERIES |
+                DebugFlags::GPU_SAMPLE_QUERIES
             }
             WebRenderDebugOption::TextureCacheDebug => {
-                webrender::DebugFlags::TEXTURE_CACHE_DBG
+                DebugFlags::TEXTURE_CACHE_DBG
             }
             WebRenderDebugOption::RenderTargetDebug => {
-                webrender::DebugFlags::RENDER_TARGET_DBG
+                DebugFlags::RENDER_TARGET_DBG
             }
         };
         flags.toggle(flag);
